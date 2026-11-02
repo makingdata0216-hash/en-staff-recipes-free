@@ -50,13 +50,18 @@ const data = require('../data/recipes.json');
   assert.equal(await page.locator('#cards .card').count(), 1);
   console.log('PASS: favorites persist after reload');
 
+  assert.equal(data.manuals.filter(m => m.id === 'first').length, 1, 'replace existing first manual in place');
+  assert.equal(data.manuals.find(m => m.id === 'first')?.steps.length, 10, 'new first-contact manual contains all ten sections');
+  assert.equal(data.manuals.filter(m => m.id === 'dark-leaf-shisha').length, 1, 'dark-leaf manual added exactly once');
+  assert.equal(data.manuals.find(m => m.id === 'dark-leaf-shisha')?.steps.length, 5, 'dark-leaf procedure steps');
+  console.log('PASS: first contact replaced and dark leaf procedure added exactly once');
   await page.goto('http://127.0.0.1:8765/#/manuals', {waitUntil:'networkidle'});
   await page.locator('.manual-card').first().waitFor();
   assert.equal(await page.locator('.manual-card').count(), data.manuals.length);
   await page.locator('.manual-card').first().click();
   await page.locator('.script-step').first().waitFor();
   assert.ok(await page.locator('.script-step').count() > 0);
-  console.log('PASS: all 6 manuals and detail pages');
+  console.log('PASS: all ' + data.manuals.length + ' manuals and detail pages');
 
   await page.goto('http://127.0.0.1:8765/#/manage', {waitUntil:'networkidle'});
   assert.match(await page.locator('#app').innerText(), /Excel/);
@@ -117,7 +122,7 @@ const data = require('../data/recipes.json');
     await page.waitForFunction(expected => document.querySelector('.detail-head h1')?.textContent?.trim() === expected, manual.name, {timeout:10000});
     assert.equal(await page.locator('.script-step').count(), manual.steps.length, 'manual steps unchanged: ' + manual.id);
   }
-  console.log('PASS: all 6 individual manuals on mobile');
+  console.log('PASS: all ' + data.manuals.length + ' individual manuals on mobile');
 
   await page.locator('.bottom-nav a[href="#/"]').click();
   await page.locator('#cards .card').first().waitFor();
