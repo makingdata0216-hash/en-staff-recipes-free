@@ -1,0 +1,58 @@
+name: Split CSS and JS (safe branch only)
+on:
+  push:
+    branches:
+      - optimize/safe-split-20261102
+    paths:
+      - .github/workflows/split-css-js.yml
+      - tools/split_css_js.py
+permissions:
+  contents: write
+jobs:
+  split:
+    if: github.ref == 'refs/heads/optimize/safe-split-20261102'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Split and verify HTML/CSS/JS
+        run: python3 tools/split_css_js.py
+      - name: Syntax and static references verification
+        run: |
+          node --check assets/js/data-loader.js
+          node --check assets/js/app.js
+          python3 -m json.tool data/recipes.json > /dev/null
+          python3 - <<'PY'
+          import json
+          import re
+          from pathlib import Path
+          root=Path(".")
+          html=Path("index.html").read_text(encoding="utf-8")
+          assert not re.search(r"<(?:script|style)>", html), "Inline blocks remain"
+          assert html.count('src="./assets/js/data-loader.js"') == 1
+          assert html.count('src="./assets/js/app.js"') == 1
+          assert html.index('data-loader.js') < html.index('app.js')
+          assert html.count('href="./assets/css/style.css"') == 1
+          data=json.loads(Path("data/recipes.json").read_text(encoding="utf-8"))
+          missing=[]
+          for record in data["recipes"]:
+            for key in ("image", "imageThumb", "imageFull", "thumbnail", "thumb"):
+              v=record.get(key)
+              if isinstance(v,str) and v.startswith("assets/") and not (root/v).is_file():
+                missing.append((record["id"],key,v))
+          assert not missing, missing[:3]
+          assert len(list(Path("assets/embedded").glob("*.webp"))) == 118
+          print(f"PASS: HTML references, {len(data['recipes'])} recipes, 118 image files")
+          PY
+      - name: Commit extracted files on safe branch
+        run: |
+          test "$(git branch --show-current)" = "optimize/safe-split-20261102"
+          git add -- index.html assets/css/style.css assets/js/data-loader.js assets/js/app.js
+          if git diff --cached --quiet; then
+            echo "Nothing to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "perf: separate CSS and JavaScript files"
+          git push origin HEAD:optimize/safe-split-20261102
