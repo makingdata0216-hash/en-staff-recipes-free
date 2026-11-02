@@ -76,6 +76,55 @@ const data = require('../data/recipes.json');
     assert.ok(bounds.bottomNav, 'mobile bottom navigation exists');
     console.log('PASS: mobile width ' + width + 'px, no horizontal overflow');
   }
+  // Final acceptance: every recipe and manual route, plus every referenced image.
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const picturePaths = [...new Set([
+    ...data.recipes.flatMap(item => [item.image, item.thumbnail].filter(Boolean)),
+    ...data.manuals.flatMap(item => [item.image].filter(Boolean))
+  ])];
+  for (const picturePath of picturePaths) {
+    assert.match(picturePath, /^assets\\/[a-zA-Z0-9_./-]+\\.(webp|png|jpeg|jpg)$/, 'safe local asset path');
+    const filepath = path.join(__dirname, '..', picturePath);
+    assert.ok(fs.existsSync(filepath), 'missing recipe asset: ' + picturePath);
+    if (picturePath.endsWith('.webp')) {
+      const buf = fs.readFileSync(filepath);
+      assert.equal(buf.toString('ascii', 0, 4), 'RIFF', 'WebP RIFF signature');
+      assert.equal(buf.toString('ascii', 8, 12), 'WEBP', 'WebP signature');
+    }
+  }
+  console.log('PASS: all ' + picturePaths.length + ' referenced assets exist and WebP headers valid');
+
+  await page.setViewportSize({width:375,height:812});
+  for (const recipe of data.recipes) {
+    await page.evaluate(id => { location.hash = '#/recipe/' + encodeURIComponent(id); }, recipe.id);
+    await page.waitForFunction(expected => document.querySelector('.detail-head h1')?.textContent?.trim() === expected, recipe.name, {timeout:10000});
+    const photo = page.locator('.recipe-cover img');
+    if (recipe.image || recipe.thumbnail) {
+      await photo.evaluate(async img => {
+        if (!img.complete) await new Promise((resolve, reject) => {
+          img.addEventListener('load', resolve, {once: true});
+          img.addEventListener('error', () => reject(new Error('Image loading failed: ' + img.src)), {once: true});
+        });
+        if (img.naturalWidth === 0) throw new Error('Image decoded width is zero: ' + img.src);
+      });
+    }
+  }
+  console.log('PASS: all 64 recipe detail routes and cover images on mobile');
+
+  for (const manual of data.manuals) {
+    await page.evaluate(id => { location.hash = '#/manual/' + encodeURIComponent(id); }, manual.id);
+    await page.waitForFunction(expected => document.querySelector('.detail-head h1')?.textContent?.trim() === expected, manual.name, {timeout:10000});
+    assert.equal(await page.locator('.script-step').count(), manual.steps.length, 'manual steps unchanged: ' + manual.id);
+  }
+  console.log('PASS: all 6 individual manuals on mobile');
+
+  await page.locator('.bottom-nav a[href="#/"]').click();
+  await page.locator('#cards .card').first().waitFor();
+  await page.locator('.bottom-nav a[href="#/manuals"]').click();
+  await page.locator('.manual-card').first().waitFor();
+  console.log('PASS: mobile bottom navigation');
+  
   assert.deepEqual(faults, [], 'browser JavaScript and HTTP errors');
   await browser.close();
   console.log('PASS: all browser checks completed');
