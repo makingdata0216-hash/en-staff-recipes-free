@@ -29,7 +29,7 @@ if not re.fullmatch(r'\s*;?\s*', candidate.lstrip()[used:]):
     raise SystemExit("FAIL: unexpected JavaScript after EN_DATA assignment")
 if 'window.EN_DATA' not in app.group(1) or 'const baseData = window.EN_DATA;' not in app.group(1):
     raise SystemExit("FAIL: app data reference missing")
-if app.group(1).count("(() => {") != 1:
+if not re.search(r"^\s*/\*[\s\S]*?\*/\s*\(\(\) => \{\s*\x27use strict\x27;", app.group(1)):
     raise SystemExit("FAIL: unexpected app entrypoint")
 
 loader = '''<script>
