@@ -1,0 +1,46 @@
+name: Split recipe JSON (safe branch only)
+on:
+  push:
+    branches:
+      - optimize/safe-split-20261102
+    paths:
+      - .github/workflows/split-recipe-json.yml
+      - tools/split_recipe_data.py
+permissions:
+  contents: write
+jobs:
+  split:
+    if: github.ref == 'refs/heads/optimize/safe-split-20261102'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Split recipe data without changing values
+        run: python3 tools/split_recipe_data.py
+      - name: Verify JSON and JavaScript syntax
+        run: |
+          python3 -m json.tool data/recipes.json > /dev/null
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path("index.html").read_text(encoding="utf-8")
+          scripts = re.findall(r"<script>(.*?)</script>", html, re.S)
+          assert len(scripts) == 2, len(scripts)
+          assert "await window.EN_DATA_READY;" in scripts[1]
+          Path("/tmp/en-app-check.js").write_text(scripts[1], encoding="utf-8")
+          Path("/tmp/en-loader-check.js").write_text(scripts[0], encoding="utf-8")
+          PY
+          node --check /tmp/en-loader-check.js
+          node --check /tmp/en-app-check.js
+      - name: Commit only HTML and JSON to safe branch
+        run: |
+          test "$(git branch --show-current)" = "optimize/safe-split-20261102"
+          git add -- index.html data/recipes.json
+          if git diff --cached --quiet; then
+            echo "Nothing to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "perf: separate recipe and manual data into static JSON"
+          git push origin HEAD:optimize/safe-split-20261102
