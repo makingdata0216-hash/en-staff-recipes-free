@@ -1,2 +1,0 @@
-SMOKE LAB / en chat editing permission test 2026-11-02.
-This test branch does not publish changes to GitHub Pages.
