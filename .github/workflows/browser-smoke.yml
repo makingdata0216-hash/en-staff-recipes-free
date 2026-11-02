@@ -1,0 +1,31 @@
+name: Browser smoke test (safe branch)
+on:
+  push:
+    branches:
+      - optimize/safe-split-20261102
+    paths:
+      - .github/workflows/browser-smoke.yml
+      - tests/browser-smoke.cjs
+      - index.html
+      - assets/css/**
+      - assets/js/**
+      - data/recipes.json
+permissions:
+  contents: read
+jobs:
+  browser-smoke:
+    if: github.ref == 'refs/heads/optimize/safe-split-20261102'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Playwright browser
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install chromium
+      - name: Run local-only mobile and desktop tests
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          node tests/browser-smoke.cjs
