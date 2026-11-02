@@ -122,6 +122,19 @@ const data = require('../data/recipes.json');
     await page.waitForFunction(expected => document.querySelector('.detail-head h1')?.textContent?.trim() === expected, manual.name, {timeout:10000});
     assert.equal(await page.locator('.script-step').count(), manual.steps.length, 'manual steps unchanged: ' + manual.id);
   }
+  for (const manual of data.manuals.filter(m => m.image)) {
+    await page.evaluate(id => { location.hash = '#/manual/' + encodeURIComponent(id); }, manual.id);
+    const photo = page.locator('.manual-visual img');
+    await photo.waitFor();
+    await photo.evaluate(async img => {
+      if (!img.complete) await new Promise((resolve, reject) => {
+        img.addEventListener('load', resolve, {once:true});
+        img.addEventListener('error', () => reject(new Error('Failed to load manual image: ' + img.src)), {once:true});
+      });
+      if (!img.naturalWidth) throw new Error('Failed to decode manual image: ' + img.src);
+    });
+  }
+  console.log('PASS: all manual images render correctly');
   console.log('PASS: all ' + data.manuals.length + ' individual manuals on mobile');
 
   await page.locator('.bottom-nav a[href="#/"]').click();
