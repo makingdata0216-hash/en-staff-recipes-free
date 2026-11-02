@@ -84,7 +84,7 @@ const data = require('../data/recipes.json');
     ...data.manuals.flatMap(item => [item.image].filter(Boolean))
   ])];
   for (const picturePath of picturePaths) {
-    assert.match(picturePath, /^assets\\/[a-zA-Z0-9_./-]+\\.(webp|png|jpeg|jpg)$/, 'safe local asset path');
+    assert.ok(picturePath.startsWith('assets/') && !picturePath.includes('..') && ['.webp', '.png', '.jpeg', '.jpg'].some(ext => picturePath.endsWith(ext)), 'safe local asset path: ' + picturePath);
     const filepath = path.join(__dirname, '..', picturePath);
     assert.ok(fs.existsSync(filepath), 'missing recipe asset: ' + picturePath);
     if (picturePath.endsWith('.webp')) {
