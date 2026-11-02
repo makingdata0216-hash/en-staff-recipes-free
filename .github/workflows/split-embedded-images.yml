@@ -1,0 +1,31 @@
+name: Split embedded images (safe branch only)
+on:
+  push:
+    branches:
+      - optimize/safe-split-20261102
+    paths:
+      - .github/workflows/split-embedded-images.yml
+      - tools/split_embedded_images.py
+permissions:
+  contents: write
+jobs:
+  split:
+    if: github.ref == 'refs/heads/optimize/safe-split-20261102'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract and verify image files
+        run: python3 tools/split_embedded_images.py
+      - name: Commit only HTML and extracted files to safe branch
+        run: |
+          test "$(git branch --show-current)" = "optimize/safe-split-20261102"
+          git add -- index.html assets/embedded/
+          if git diff --cached --quiet; then
+            echo "Nothing to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "perf: split inline images without re-encoding (safe branch)"
+          git push origin HEAD:optimize/safe-split-20261102
