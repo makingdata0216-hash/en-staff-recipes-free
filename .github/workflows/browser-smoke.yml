@@ -15,7 +15,7 @@ permissions:
 jobs:
   browser-smoke:
     if: github.ref == 'refs/heads/optimize/safe-split-20261102'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
