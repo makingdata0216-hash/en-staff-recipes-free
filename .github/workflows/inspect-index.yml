@@ -1,0 +1,19 @@
+name: Inspect embedded images (safe branch)
+on:
+  push:
+    branches:
+      - optimize/safe-split-20261102
+    paths:
+      - .github/workflows/inspect-index.yml
+      - tools/inspect_index.py
+      - index.html
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect index without modifying files
+        run: python3 tools/inspect_index.py
