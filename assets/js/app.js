@@ -79,6 +79,7 @@
     if (typeof path !== 'string') return '';
     if (/^data:image\/(?:png|jpeg|webp);base64,[a-z0-9+/=]+$/i.test(path)) return path;
     if (/^assets\/[a-z0-9_\-.\/]+\.(png|jpe?g|webp|gif)$/i.test(path) && !path.includes('..')) return path;
+    if (/^assets\/food-guides\/[a-z0-9-]+\.svg$/i.test(path)) return path;
     return '';
   }
   function theme(item) {
