@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta name="robots" content="noindex, nofollow, noarchive">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#22382d">
+  <meta name="description" content="Shisha Cafe&Bar en スタッフ用レシピブック・接客マニュアル。検索や閲覧にAI APIを使用しません。">
+  <title>en FOOD RECIPE PREVIEW</title>
+  <link rel="stylesheet" href="./assets/css/style.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar" id="sidebar" aria-label="メニュー">
+      <a class="brand" href="#/" aria-label="en ホームに戻る">
+        <span class="brand-logo">en<span>.</span></span>
+        <span class="brand-desc"><strong>STAFF RECIPE BOOK</strong><small>Shisha Cafe & Bar</small></span>
+      </a>
+      <div class="nav-label">WORKSPACE</div>
+      <nav class="sidebar-nav" aria-label="ページ切り替え">
+        <a href="#/" data-tab="home"><span class="nav-icon">▤</span>レシピ一覧 <span class="nav-arrow">›</span></a>
+        <a href="#/favorites" data-tab="favorites"><span class="nav-icon">♡</span>お気に入り <span class="nav-arrow">›</span></a>
+        <a href="#/manuals" data-tab="manuals"><span class="nav-icon">☰</span>接客マニュアル <span class="nav-arrow">›</span></a>
+        <a href="#/manage" data-tab="manage"><span class="nav-icon">⇅</span>Excel・データ管理 <span class="nav-arrow">›</span></a>
+      </nav>
+      <div class="sidebar-note"><span class="note-spark">✳</span><strong>正確な手順を、すぐに。</strong><p>未確認の分量や作り方は「要確認」と表示しています。</p></div>
+      <div class="sidebar-foot">STATIC EDITION · NO AI API</div>
+    </aside>
+    <div id="sidebarShade" class="sidebar-shade" hidden></div>
+    <div class="workspace">
+      <header class="topbar">
+        <button class="mobile-menu" id="openSidebar" aria-label="メニューを開く">☰</button>
+        <span class="crumb">en <span>/</span> <b id="crumbPage">RECIPE LIBRARY</b></span>
+        <span class="offline-chip"><i></i> AI API 不使用</span>
+      </header>
+      <div class="quickedit-bar" role="toolbar" aria-label="この端末の編集ツール">
+        <button type="button" id="localEdit" class="quickedit-btn" aria-label="商品情報を編集">✎ <span>編集</span></button>
+        <button type="button" id="localShare" class="quickedit-btn primary" aria-label="編集内容をJSONで書き出し・共有">↗ <span>出力・共有</span></button>
+        <button type="button" id="localHistory" class="quickedit-btn" aria-label="編集履歴を開く">▤ <span>履歴</span><span id="editCount" class="edit-count" hidden>0</span></button>
+      </div>
+      <main id="app" class="page" aria-live="polite"></main>
+      <footer class="footer"><span><b>en.</b> STAFF RECIPE BOOK</span><span>フード手順書確認用 · 原本サイトは変更なし</span></footer>
+    </div>
+  </div>
+  <nav class="bottom-nav" aria-label="スマートフォン用ページ切り替え">
+    <a href="#/" data-tab="home"><span>⌂</span>レシピ</a>
+    <a href="#/favorites" data-tab="favorites"><span>♡</span>お気に入り</a>
+    <a href="#/manuals" data-tab="manuals"><span>☰</span>マニュアル</a>
+    <a href="#/manage" data-tab="manage"><span>⇅</span>Excel管理</a>
+  </nav>
+  <dialog id="editDialog" class="staff-dialog" aria-labelledby="editDialogTitle">
+    <div class="dialog-heading"><div><div class="dialog-eyebrow">LOCAL EDIT</div><h2 id="editDialogTitle">レシピを編集</h2></div><button type="button" id="closeEdit" class="close-dialog" aria-label="閉じる">✕</button></div>
+    <p class="dialog-hint">変更はこの端末内だけに保存されます。全員用に反映するには「出力・共有」でJSONを送ってください。</p>
+    <form id="staffEditForm">
+      <label class="form-field"><span>編集する商品</span><select id="editTarget" name="target" required></select></label>
+      <div id="editEmptyState" class="edit-empty" hidden>上の一覧から、編集する商品を選んでください。<br>商品を選ぶと、分量・作り方などの編集欄が表示されます。</div>
+      <div id="editFields" class="edit-fields" hidden>
+      <div class="form-grid">
+        <label class="form-field"><span>商品名 <em>必須</em></span><input id="editName" name="name" type="text" maxlength="100" required></label>
+        <label class="form-field"><span>提供・加熱時間（任意）</span><input id="editTime" name="time" type="text" placeholder="例：170℃・3分40秒" maxlength="140"></label>
+        <label class="form-field"><span>カテゴリ</span><select id="editCategory" name="category"><option value="フード">フード</option><option value="ドリンク">ドリンク</option><option value="スイーツ">スイーツ</option></select></label>
+        <label class="form-field"><span>種類</span><input id="editGroup" name="group" type="text" maxlength="80"></label>
+      </div>
+      <label class="form-field"><span>商品説明</span><textarea id="editSummary" name="summary" rows="2" maxlength="1600"></textarea></label>
+      <label class="form-field"><span>材料・分量 <small>1行につき1項目</small></span><textarea id="editIngredients" name="ingredients" rows="5" placeholder="ジン：45ml
+トニックウォーター：適量"></textarea></label>
+      <label class="form-field"><span>作り方 <small>1行につき1手順（番号は自動で付きます）</small></span><textarea id="editSteps" name="steps" rows="6"></textarea></label>
+      <label class="form-field"><span>注意事項 <small>1行につき1項目</small></span><textarea id="editNotes" name="notes" rows="3"></textarea></label>
+      <div class="edit-form-warning">※ 文字の編集だけではレシピ画像内の文字は変わりません。共有後、サイト全体を更新するときに照合します。</div>
+      </div>
+      <div class="dialog-actions"><button type="button" id="cancelEdit" class="outline-dialog-btn">キャンセル</button><button type="submit" class="save-dialog-btn">✓ この端末に保存</button></div>
+    </form>
+  </dialog>
+  <dialog id="historyDialog" class="staff-dialog" aria-labelledby="historyDialogTitle">
+    <div class="dialog-heading"><div><div class="dialog-eyebrow">CHANGE LOG</div><h2 id="historyDialogTitle">編集履歴</h2></div><button type="button" id="closeHistory" class="close-dialog" aria-label="閉じる">✕</button></div>
+    <p class="dialog-hint">履歴はこの端末だけに保存されます。出力したJSONには編集内容と履歴を含めます。</p>
+    <div id="historyItems" class="history-items"></div>
+    <div class="dialog-actions"><button type="button" id="importJson" class="outline-dialog-btn">↥ JSONを読み込む</button><button type="button" id="historyShare" class="save-dialog-btn">↗ 出力・共有</button></div>
+  </dialog>
+  <dialog id="guideDialog" class="staff-dialog staff-guide" aria-labelledby="guideDialogTitle">
+    <div class="dialog-heading"><div><div class="dialog-eyebrow">SEND EDITS</div><h2 id="guideDialogTitle">ChatGPTに変更を送る</h2></div><button type="button" id="closeGuide" class="close-dialog" aria-label="閉じる">✕</button></div>
+    <p class="dialog-hint" id="guideMessage">編集内容のJSONファイルを保存しました。</p>
+    <ol class="guide-list"><li><strong>「ダウンロード」フォルダにある</strong><br><code>en_edits_日付.json</code> を確認</li><li><strong>ChatGPTの入力欄で「＋」を押す</strong><br>「ファイル」から保存したJSONを選択</li><li><strong>次の文章を添えて送信</strong><br>「この編集をenレシピサイト最新版に反映して」</li></ol>
+    <p class="guide-foot">Androidの共有画面が開いた場合は、ChatGPTへ直接ファイルを共有してもOK。元のレシピ画像や未編集のメニューはJSONに含めません。</p>
+    <div class="dialog-actions"><button type="button" id="closeGuideBottom" class="save-dialog-btn">閉じる</button></div>
+  </dialog>
+  <input id="importEditFile" type="file" accept=".json,application/json" hidden>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <div class="image-lightbox" id="imageLightbox" hidden role="dialog" aria-modal="true" aria-label="レシピ画像を拡大表示">
+    <div class="image-name" id="imageZoomName"></div>
+    <img id="imageZoom" alt="拡大レシピ画像">
+    <button class="image-close" id="imageClose" type="button">✕ 閉じる</button>
+  </div>
+  <script src="./food-preview-loader.js"></script>
+  <script src="./food-preview-app.js"></script>
+</body>
+</html>
